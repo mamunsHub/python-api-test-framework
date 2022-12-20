@@ -31,3 +31,6 @@ python -m venv .venv
 
 ### Install all the dependencies
 pip install -r requirements.txt
+
+### To run the test
+pytest
