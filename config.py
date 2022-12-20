@@ -1,0 +1,1 @@
+BASE_URI = 'http://192.168.0.109:5000/api/people'
