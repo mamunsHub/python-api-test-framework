@@ -21,7 +21,6 @@ def test_read_all_data():
     assert_that(first_names).contains('Kent')
 
 
-
 def test_new_person_can_be_added():
     unique_last_name = create_new_person()
 
@@ -31,14 +30,55 @@ def test_new_person_can_be_added():
     assert_that(new_users).is_not_empty()
 
 
+def test_person_info_can_be_updated():
+    new_user_last_name = create_new_person()
+    all_users, _ = get_all_users()
+    # check if people with same name exists
+    user = search_users_by_last_name(all_users, 'Abdullah')[0]
+    user_id = user['person_id']
+    if user_id > 0:
+        url = f'{BASE_URI}/{user_id}'
+        responses = requests.delete(url)   # if exists then the data will be deleted to exclude conflict
+
+    new_user = search_users_by_last_name(all_users, new_user_last_name)[0]
+    new_user_id = new_user['person_id']
+    #print(new_user_id)
+
+    # Data to update
+    payload = dumps({
+        'fname': 'Mamun',
+
+        'lname': 'Abdullah'
+    })
+
+    headers = {
+        'Content-type': 'application/json',
+        'Accept': 'application/json'
+    }
+
+    # Making put request to update the data
+    url = f'{BASE_URI}/{new_user_id}'
+    response = requests.put(url=url, data=payload, headers=headers)
+    #print(response)
+    assert_that(response.status_code).is_equal_to(200)
+    assert_that(response.status_code).is_equal_to(requests.codes.ok)
+
+    # validate if user is updated
+    all_new_users, _ = get_all_users()
+    # check if update people with new name exists
+    new_user_name = search_users_by_last_name(all_users, 'Abdullah')[0]
+    new_user_first_name = new_user_name['fname']
+    new_user_last_name = new_user_name['lname']
+    assert_that(new_user_first_name).contains('Mamun')
+    assert_that(new_user_last_name).contains('Abdullah')
 
 
 def test_new_person_can_be_deleted():
     new_user_last_name = create_new_person()
-    all_users, _ = get_all_users() # it fetches only the first returned variable from the function
+    all_users, _ = get_all_users()  # it fetches only the first returned variable from the function
     new_user = search_users_by_last_name(all_users, new_user_last_name)[0]
 
-    #print(new_user)
+    # print(new_user)
     person_to_be_deleted = new_user['person_id']  # Fetching id of the newly created user
     url = f'{BASE_URI}/{person_to_be_deleted}'
     responses = requests.delete(url)
@@ -49,7 +89,6 @@ def test_new_person_can_be_deleted():
     all_new_users, _ = get_all_users()
     user_ids = [people['person_id'] for people in all_new_users]
     assert_that(user_ids).does_not_contain(person_to_be_deleted)
-
 
 
 def get_all_users():
@@ -79,7 +118,6 @@ def create_new_person():
     response = requests.post(url=BASE_URI, data=payload, headers=headers)
     assert_that(response.status_code).is_equal_to(204)
     return unique_last_name
-
 
 
 def search_users_by_last_name(peoples, unique_last_name):
