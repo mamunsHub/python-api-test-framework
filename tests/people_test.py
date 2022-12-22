@@ -1,6 +1,6 @@
 from json import dumps
 from config import BASE_URI
-from assertpy.assertpy import assert_that
+from assertpy.assertpy import assert_that, soft_assertions
 from utils.print_helpers import pretty_print
 from uuid import uuid4
 
@@ -10,15 +10,16 @@ import requests
 def test_read_all_data():
     peoples, response = get_all_users()
     # response from requests has many useful properties
-    # we can assert on the response status code    
-    assert_that(response.status_code).is_equal_to(200)
-    assert_that(response.status_code).is_equal_to(requests.codes.ok)
-    # pretty_print(peoples)
+    # we can assert on the response status code
+    with soft_assertions():
+        assert_that(response.status_code).is_equal_to(200)
+        assert_that(response.status_code).is_equal_to(requests.codes.ok)
+        # pretty_print(peoples)
 
-    # now validate data 
-    # validating a first name of a user call kent
-    first_names = [people['fname'] for people in peoples]
-    assert_that(first_names).contains('Kent')
+        # now validate data
+        # validating a first name of a user call kent
+        #first_names = [people['fname'] for people in peoples]
+        assert_that(peoples).extracting('fname').is_not_empty().contains('Kent')  # fluent assertions
 
 
 def test_new_person_can_be_added():
@@ -27,7 +28,8 @@ def test_new_person_can_be_added():
     # Check if new person is added successfully
     peoples = requests.get(BASE_URI).json()
     new_users = search_users_by_last_name(peoples, unique_last_name)
-    assert_that(new_users).is_not_empty()
+    with soft_assertions():
+        assert_that(new_users).is_not_empty()
 
 
 def test_person_info_can_be_updated():
@@ -60,17 +62,17 @@ def test_person_info_can_be_updated():
     url = f'{BASE_URI}/{new_user_id}'
     response = requests.put(url=url, data=payload, headers=headers)
     #print(response)
-    assert_that(response.status_code).is_equal_to(200)
-    assert_that(response.status_code).is_equal_to(requests.codes.ok)
 
-    # validate if user is updated
-    all_new_users, _ = get_all_users()
-    # check if update people with new name exists
-    new_user_name = search_users_by_last_name(all_users, 'Abdullah')[0]
-    new_user_first_name = new_user_name['fname']
-    new_user_last_name = new_user_name['lname']
-    assert_that(new_user_first_name).contains('Mamun')
-    assert_that(new_user_last_name).contains('Abdullah')
+    with soft_assertions():
+        assert_that(response.status_code).is_equal_to(200)
+        assert_that(response.status_code).is_equal_to(requests.codes.ok)
+
+        # validate if user is updated
+        all_new_users, _ = get_all_users()
+        # check if update people with new name exists
+        assert_that(all_new_users).extracting('fname').contains('Mamun')
+        assert_that(all_new_users).extracting('lname').contains('Abdullah')
+        assert_that(all_new_users).extracting('person_id').contains(new_user_id)
 
 
 def test_new_person_can_be_deleted():
@@ -82,13 +84,15 @@ def test_new_person_can_be_deleted():
     person_to_be_deleted = new_user['person_id']  # Fetching id of the newly created user
     url = f'{BASE_URI}/{person_to_be_deleted}'
     responses = requests.delete(url)
-    assert_that(responses.status_code).is_equal_to(200)
-    assert_that(responses.status_code).is_equal_to(requests.codes.ok)
 
-    # validate if deleted user can not be found
-    all_new_users, _ = get_all_users()
-    user_ids = [people['person_id'] for people in all_new_users]
-    assert_that(user_ids).does_not_contain(person_to_be_deleted)
+    with soft_assertions():
+        assert_that(responses.status_code).is_equal_to(200)
+        assert_that(responses.status_code).is_equal_to(requests.codes.ok)
+
+        # validate if deleted user can not be found
+        all_new_users, _ = get_all_users()
+        #user_ids = [people['person_id'] for people in all_new_users]
+        assert_that(all_new_users).extracting('person_id').does_not_contain(person_to_be_deleted)
 
 
 def get_all_users():
